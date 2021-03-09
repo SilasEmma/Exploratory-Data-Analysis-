@@ -1,0 +1,222 @@
+```{r}
+# importing library for data manipulation, cleaning, and transformation.
+library(tidyverse)
+library(gridExtra)
+# loading data visualization library 
+library(ggplot2)
+library(WVPlots)
+```
+
+```{r}
+# loading dumbing facebook datasets for exploratory data analysis.
+fb <- read_tsv('Project/Exploratory-Data-Analysis-/pseudo_facebook.tsv')
+```
+
+```{r}
+# returning the first five row of each column
+head(fb)
+```
+
+
+```{r}
+# return data type of each column
+str(fb)
+```
+
+```{r}
+# returns common statistics such as mean, median, max, and min
+summary(fb)
+```
+
+```{r}
+# counting many missing values are on each column
+countMising <- sapply(fb, FUN = function(col) sum(is.na(col)))
+countMising
+```
+
+
+```{r}
+# plotting histogram for friend count between male and female.
+
+ggplot(na.omit(fb), aes(friend_count)) +
+  geom_histogram(binwidth = 25) +
+  xlim(c(1,2000)) +
+  # using facet wrap to display for both gender.
+  facet_wrap(~gender, scales = 'free') +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# observation
+# from the plot it means male users have more friend count than female user.
+```
+
+```{r}
+ggplot(na.omit(fb), aes(tenure/365)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = seq(0, 8, 1)) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+```
+
+```{r}
+ggplot(fb, aes(age)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks = seq(0, 113, 13)) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# plotting histogram for age range.
+# observation
+#most facebook user with active account, age lines between 18 to 40
+# also an outlier observe. having facebook active user of age 101-110 
+```
+
+```{r}
+# observing the gender race higher friend count, using frequency polygon.
+ggplot(na.omit(fb),aes(friend_count, color = gender)) +
+ geom_freqpoly() +
+ scale_x_continuous(limits = c(0,2000), breaks = seq(0,2000,500)) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+```
+
+```{r}
+# transformation help getting more insight. by using scale_x_log10.
+ggplot(na.omit(fb), aes(www_likes, color = gender)) +
+  geom_freqpoly() +
+  scale_x_continuous(limits = c(0,3000), breaks = seq(0,3000,500)) +
+  scale_x_log10() +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+```
+
+```{r}
+ggplot(na.omit(fb), aes(friend_count, gender)) +
+  geom_boxplot() +
+  coord_cartesian(xlim  = c(0,1000)) + 
+  theme_bw() + 
+  theme(panel.grid = element_blank())
+
+# plotting friend count by gender to detect outlier
+```
+
+```{r}
+ggplot(na.omit(fb), aes(friendships_initiated, color = gender)) +
+ geom_freqpoly() +
+ scale_x_log10() + 
+  theme(panel.grid = element_blank()) + 
+  theme_bw()
+```
+
+```{r}
+ggplot(fb, aes(age, friend_count, color = 'orange')) +
+  geom_jitter(alpha = 1/20) +
+  scale_x_continuous(limits = c(13,113), breaks = seq(13,113,13)) + 
+  theme_bw() + 
+  theme(panel.grid = element_blank())
+
+```
+
+
+```{r}
+ggplot(na.omit(fb), aes(age, friendships_initiated)) +
+  geom_point(alpha = 1/20, position = position_jitter(h = 0)) +
+  coord_trans(y = 'sqrt') + 
+  theme_bw() + 
+  theme(panel.grid = element_blank())
+
+# using a bi-variant plot to observe relationship between age and friendship initiated
+```
+
+
+```{r}
+# checking number of users that uses facebook mobile app to likes post
+# with over 35056 not using mobile app and over 63947 using mobile app
+# 
+mobile_check_in <- NA
+fb$mobile_check_in <- ifelse(fb$mobile_likes > 0, 1, 0)
+fb$mobile_check_in <- factor(fb$mobile_check_in)
+
+summary(fb$mobile_check_in)
+sum(fb$mobile_check_in == 1)/length(fb$mobile_check_in)
+```
+
+
+```{r}
+by(fb$friend_count, fb$gender, sum)
+by(fb$likes, fb$gender, sum)
+
+# summing number of friend count by gender
+# female: 9740258 friend count
+# male: 9666787 friend count
+# summing number of like by gender
+# female: 10468106
+# male: 4959923
+```
+
+```{r}
+# package use for data manipulation, and transformation.
+library(dplyr)
+
+age.group <- fb %>%
+  group_by(age) %>%
+  summarise(
+    mean.age = mean(friend_count, na.rm = T),
+    median.age = median(friend_count, na.rm = T),
+    count = n()
+  )
+
+ggplot(age.group, aes(age, mean.age)) +
+  geom_line() + 
+  theme_bw() + 
+  theme(panel.grid = element_blank())
+```
+
+
+```{r}
+  # library(gridExtra)
+  # 
+  # age_by_month <- fb %>%
+  #   group_by(age_with_month) %>%
+  #   summarise(
+  #     friend_coun_mean = mean(friend_count),
+  #     friend_coun_median = median(friend_count),
+  #     count = n()
+  #   )
+  # 
+  # p1 <- ggplot(age_by_month, aes(age_with_month, friend_coun_mean)) +
+  #   geom_line() +
+  #   geom_smooth()
+  # 
+  # p2 <- ggplot(age.group, aes(age, mean.age)) +
+  #   geom_line() +
+  #   geom_smooth()
+  # 
+  # grid.arrange(p1, p2)
+```
+
+```{r}
+df_age_gender <- fb %>%
+  filter(!is.na(gender)) %>%
+  group_by(age, gender) %>%
+  summarise(
+    mean_friend_count = mean(friend_count),
+    median_friend_count = median(friend_count),
+    count = n()
+  )
+
+ggplot(df_age_gender, aes(age, mean_friend_count, color = gender)) +
+  geom_line() + 
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# observation 
+# haven't gotten the mean and median of friend count
+# female users have more count than the male
+```
+
+```{r}
+# saving the datasets as a cvs file
+write.csv(fb, file = 'fb.csv')
+```
+
